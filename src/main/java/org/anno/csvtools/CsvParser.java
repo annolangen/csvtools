@@ -4,9 +4,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
+import java.util.List;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-// A parser of CSV files. For effciency, this class works at the byte level. It allocated large buffers, where quoted cells are stripped of their quotes and unescaped. 
+/**
+ * A parser of CSV files. For effciency, this class works at the byte level. It
+ * allocates large buffers, where quoted cells are stripped of their quotes and
+ * unescaped, when needed.
+ */
 public class CsvParser {
   private final ReadableByteChannel in;
   private boolean eof = false;
@@ -26,16 +32,7 @@ public class CsvParser {
     currentBuffer.flip();
   }
 
-  boolean isEndOfRow() {
-    if (currentBuffer.remaining() == 0 && eof) {
-      return true;
-    }
-    int c = currentBuffer.array()[currentBuffer.position()];
-    return c == '\n' || c == '\r';
-  }
-
-  // Returns the next cell or null if there are no more cells.
-  ParsedCell nextCell() throws IOException {
+  List<ParsedCell> nextRow() throws IOException {
     if (!eof && currentBuffer.remaining() < 1024) {
       ByteBuffer newBuffer = ByteBuffer.allocate(1024 * 1024);
       newBuffer.put(currentBuffer);
@@ -46,31 +43,35 @@ public class CsvParser {
     int p = currentBuffer.position();
     int limit = currentBuffer.limit();
     byte[] b = currentBuffer.array();
-    while (p < limit && (b[p] == ',' || b[p] == '\n' || b[p] == '\r')) {
-      p++;
-    }
-    int start = p;
-    if (b[p] != '"') {
-      while (p < limit && b[p] != ',' && b[p] != '\n') {
-        p++;
-      }
-      currentBuffer.position(p < limit ? p + 1 : p);
-      return new ParsedCell(b, start, p - start);
-    }
+
+    List<ParsedCell> row = new ArrayList<>();
     while (true) {
-      p++;
-      while (p < limit && b[p] != '"') {
-        p++;
-      }
       if (p == limit) {
-        currentBuffer.position(limit);
         return null;
       }
-      if (b[p + 1] != '"') {
-        currentBuffer.position(p + 2);
-        return new ParsedCell(b, start, p + 1 - start);
+      int start = p;
+      if (b[p] == '"') {
+        p += 1;
+        while (p < limit && (b[p] != '"' || (++p < limit && b[p] == '"'))) {
+          p++;
+        }
+        row.add(new ParsedCell(b, start, p - start));
+      } else {
+        while (p < limit && b[p] != ',' && b[p] != '\n' && b[p] != '\r') {
+          p++;
+        }
+        row.add(new ParsedCell(b, start, p - start));
       }
-      p++;
+      if (p < limit && b[p] == ',') {
+        p++;
+      }
+      if (p == limit || b[p] == '\n' || b[p] == '\r') {
+        while (p < limit && (b[p] == '\n' || b[p] == '\r')) {
+          p++;
+        }
+        currentBuffer.position(p);
+        return row;
+      }
     }
   }
 
