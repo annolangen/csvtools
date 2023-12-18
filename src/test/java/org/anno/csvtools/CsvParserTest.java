@@ -1,14 +1,14 @@
 package org.anno.csvtools;
 
-import org.anno.csvtools.CsvParser.ParsedCell;
-import org.junit.jupiter.api.Test;
+import static com.google.common.truth.Truth.assertThat;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.util.List;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static com.google.common.truth.Truth.assertThat;
+import org.anno.csvtools.CsvParser.ParsedCell;
+import org.junit.jupiter.api.Test;
 
 public class CsvParserTest {
 
@@ -23,7 +23,8 @@ public class CsvParserTest {
     assertThat(row1.stream().map(Object::toString).toList()).containsExactly("cell1", "666");
     assertThat(row1.get(1).toDouble()).isEqualTo(666);
 
-    assertThat(parser.nextRow().stream().map(Object::toString).toList()).containsExactly("a21", "a22");
+    assertThat(parser.nextRow().stream().map(Object::toString).toList())
+        .containsExactly("a21", "a22");
     assertThat(parser.nextRow()).isNull();
   }
 

@@ -11,24 +11,23 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.anno.csvtools.CsvParser.ParsedCell;
 
 /**
- * A command line tool to cut columns from a CSV file. The first row is assumed
- * to contain the headers. The output preserves the distinction between quoted
- * and unquoted cells.
+ * A command line tool to cut columns from a CSV file. The first row is assumed to contain the
+ * headers. The output preserves the distinction between quoted and unquoted cells.
  */
 public class CsvCut {
   public static void main(String[] args) throws Exception {
-    doCut(getCutSpec(args, System.out, FileOpener.REGULAR), System.out);
+    doCut(getCutSpec(args, System.out, FileOpener.REGULAR, System::exit), System.out);
   }
 
   // VisibleForTesting
   static void doCut(CutSpec spec, PrintStream out) throws IOException {
     CsvParser parser = new CsvParser(spec.in);
     List<ParsedCell> rawHeaders = parser.nextRow();
-    List<String> headers = rawHeaders.stream().map(ParsedCell::unescape).map(Object::toString).toList();
+    List<String> headers =
+        rawHeaders.stream().map(ParsedCell::unescape).map(Object::toString).toList();
     RowProcessor columnPrinter = RowProcessor.printColumns(spec.columFunction.apply(headers), out);
     columnPrinter.process(rawHeaders);
     for (List<ParsedCell> row = parser.nextRow(); row != null; row = parser.nextRow()) {
@@ -53,14 +52,18 @@ public class CsvCut {
   }
 
   // VisibleForTesting
-  static CutSpec getCutSpec(String[] args, PrintStream out, FileOpener openFile) throws IOException {
+  static CutSpec getCutSpec(String[] args, PrintStream out, FileOpener openFile, ExitFn exitFn)
+      throws IOException {
     ReadableByteChannel channel = Channels.newChannel(System.in);
-    Function<List<String>, int[]> columnFn = (List<String> headers) -> IntStream.range(0, headers.size()).toArray();
+    Function<List<String>, int[]> columnFn =
+        (List<String> headers) -> IntStream.range(0, headers.size()).toArray();
     // args[0] == "cut"
     for (int i = 1; i < args.length; i++) {
       if (args[i].equals("-K") && i + 1 < args.length) {
         String toKeep = args[++i];
-        columnFn = (ignored) -> Stream.of(toKeep.split(",")).mapToInt(Integer::parseInt).map(k -> k - 1).toArray();
+        columnFn =
+            (ignored) ->
+                Stream.of(toKeep.split(",")).mapToInt(Integer::parseInt).map(k -> k - 1).toArray();
       }
       if (i == args.length - 1) {
         Optional<ReadableByteChannel> maybeChannel = openFile.openFile(args[i]);
@@ -70,7 +73,7 @@ public class CsvCut {
       }
       if (args[i].equals("-h") || args[i].equals("-?")) {
         printHelp(out);
-        System.exit(1);
+        exitFn.exit(1);
         return null;
       }
     }
@@ -97,14 +100,22 @@ public class CsvCut {
   public interface FileOpener {
     Optional<ReadableByteChannel> openFile(String path);
 
-    static FileOpener REGULAR = (path) -> {
-      return Optional.of(Path.of(path)).filter(p -> p.toFile().exists()).map(p -> {
-        try {
-          return FileChannel.open(p);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      });
-    };
+    static FileOpener REGULAR =
+        (path) -> {
+          return Optional.of(Path.of(path))
+              .filter(p -> p.toFile().exists())
+              .map(
+                  p -> {
+                    try {
+                      return FileChannel.open(p);
+                    } catch (IOException e) {
+                      throw new RuntimeException(e);
+                    }
+                  });
+        };
+  }
+
+  public interface ExitFn {
+    void exit(int status);
   }
 }

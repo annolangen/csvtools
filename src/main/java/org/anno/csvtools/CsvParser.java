@@ -1,17 +1,16 @@
 package org.anno.csvtools;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 /**
- * A parser of CSV files. For effciency, this class works at the byte level. It
- * allocates large buffers, where quoted cells are stripped of their quotes and
- * unescaped, when needed.
+ * A parser of CSV files. For effciency, this class works at the byte level. It allocates large
+ * buffers, where quoted cells are stripped of their quotes and unescaped, when needed.
  */
 public class CsvParser {
   private final ReadableByteChannel in;
