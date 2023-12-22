@@ -37,8 +37,9 @@ class CsvCutTest {
 
   CutSpec doCut(String[] args, String csv) throws Exception {
     CutSpec spec = CsvCut.getCutSpec(args, testOut, getFileOpener(csv), exitFn);
-    if (spec != null)
+    if (spec != null) {
       CsvCut.doCut(spec, testOut);
+    }
     return spec;
   }
 
