@@ -18,8 +18,12 @@ import org.anno.csvtools.CsvParser.ParsedCell;
  * headers. The output preserves the distinction between quoted and unquoted cells.
  */
 public class CsvCut {
-  public static void main(String[] args) throws Exception {
-    doCut(getCutSpec(args, System.out, FileOpener.REGULAR, System::exit), System.out);
+  public static void main(String[] args) {
+    try {
+      doCut(getCutSpec(args, System.out, FileOpener.REGULAR, System::exit), System.out);
+    } catch (IOException e) {
+      System.err.println(e.getMessage());
+    }
   }
 
   // VisibleForTesting
@@ -64,6 +68,15 @@ public class CsvCut {
         columnFn =
             (ignored) ->
                 Stream.of(toKeep.split(",")).mapToInt(Integer::parseInt).map(k -> k - 1).toArray();
+      }
+      if (args[i].equals("-k") && i + 1 < args.length) {
+        String toKeep = args[++i];
+        columnFn =
+            (headers) ->
+                Stream.of(toKeep.split(","))
+                    .mapToInt(h -> headers.indexOf(h))
+                    .filter(k -> k > 0)
+                    .toArray();
       }
       if (i == args.length - 1) {
         Optional<ReadableByteChannel> maybeChannel = openFile.openFile(args[i]);

@@ -20,8 +20,7 @@ import org.mockito.MockitoAnnotations;
 
 class CsvCutTest {
 
-  @Mock
-  ExitFn exitFn;
+  @Mock ExitFn exitFn;
 
   ByteArrayOutputStream testOutput = new ByteArrayOutputStream();
   PrintStream testOut = new PrintStream(testOutput);
@@ -32,7 +31,8 @@ class CsvCutTest {
   }
 
   FileOpener getFileOpener(String csv) {
-    return (ignoredFilename) -> Optional.of(Channels.newChannel(new ByteArrayInputStream(csv.getBytes(UTF_8))));
+    return (ignoredFilename) ->
+        Optional.of(Channels.newChannel(new ByteArrayInputStream(csv.getBytes(UTF_8))));
   }
 
   CutSpec doCut(String[] args, String csv) throws Exception {
@@ -45,33 +45,34 @@ class CsvCutTest {
 
   @Test
   void testGetCutSpecParsesExplicitIndices() throws Exception {
-    CutSpec spec = doCut(new String[] { "cut", "-K", "1,4", "test.csv" }, "h1,h2\na11,a12\na21,a22\n");
+    CutSpec spec =
+        doCut(new String[] {"cut", "-K", "1,4", "test.csv"}, "h1,h2\na11,a12\na21,a22\n");
 
     assertThat(spec).isNotNull();
     assertThat(spec.in).isNotNull();
-    assertThat(spec.columFunction.apply(Arrays.asList())).isEqualTo(new int[] { 0, 3 });
+    assertThat(spec.columFunction.apply(Arrays.asList())).isEqualTo(new int[] {0, 3});
   }
 
   @Test
   void testIndicesDependOnHeader() throws Exception {
-    CutSpec spec = doCut(new String[] { "cut", "test.csv" }, "h1,h2,h3\na11,a12,a13\n");
+    CutSpec spec = doCut(new String[] {"cut", "test.csv"}, "h1,h2,h3\na11,a12,a13\n");
 
     assertThat(spec).isNotNull();
     assertThat(spec.in).isNotNull();
     assertThat(spec.columFunction.apply(Arrays.asList("h1", "h2", "h3")))
-        .isEqualTo(new int[] { 0, 1, 2 });
+        .isEqualTo(new int[] {0, 1, 2});
   }
 
   @Test
   void testSwapsColumns() throws Exception {
-    doCut(new String[] { "cut", "-K", "2,1" }, "h1,h2\na11,a12\na21,a22\n");
+    doCut(new String[] {"cut", "-K", "2,1"}, "h1,h2\na11,a12\na21,a22\n");
 
     assertThat(testOutput.toString(UTF_8)).isEqualTo("h2,h1\na12,a11\na22,a21\n");
   }
 
   @Test
   void testHelp() throws Exception {
-    doCut(new String[] { "cut", "-h" }, "");
+    doCut(new String[] {"cut", "-h"}, "");
 
     assertThat(testOutput.toString(UTF_8))
         .isEqualTo(
